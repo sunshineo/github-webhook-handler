@@ -1,11 +1,9 @@
-Flask webhook for Github
+Flask webhook for Github and Tutum
 ########################
-A very simple github post-receive web hook handler that executes per default a
-pull uppon receiving. The executed action is configurable per repository.
+A very simple github post-receive web hook handler that redeploy a tutum service.
 
 It will also verify that the POST request originated from github.com or a
-defined GitHub Enterprise server.  Additionally will ensure that it has a valid
-signature (only when the ``key`` setting is properly configured).
+defined GitHub Enterprise server.
 
 Gettings started
 ----------------
@@ -19,50 +17,21 @@ Install dependencies found in ``requirements.txt``.
 
     pip install -r requirements.txt
 
-Repository Configuration
-========================
-
-Edit ``repos.json`` to configure repositories, each repository must be
-registered under the form ``GITHUB_USER/REPOSITORY_NAME``.
-
-.. code-block:: json
-
-    {
-        "razius/puppet": {
-            "path": "/home/puppet",
-            "key": "MyVerySecretKey",
-            "action": [["git", "pull", "origin", "master"], ],
-        },
-        "d3non/somerandomexample/branch:live": {
-	    "path": "/home/exampleapp",
-            "key": "MyVerySecretKey",
-	    "action": [["git", "pull", "origin", "live"],
-		["echo", "execute", "some", "commands", "..."] ]
-	}
-    }
-
 Runtime Configuration
 =====================
 
 Runtime operation is influenced by a set of environment variables which require
-being set to influence operation.  Only REPOS_JSON_PATH is required to be set,
-as this is required to know how to act on actions from repositories.  The
+being set to influence operation.  Only SERVICE_ID is required to be set.  The
 remaining variables are optional.  USE_PROXYFIX needs to be set to true if
 being used behind a WSGI proxy, and is not required otherwise.  GHE_ADDRESS
 needs to be set to the IP address of a GitHub Enterprise instance if that is
 the source of webhooks.
 
-Set environment variable for the ``repos.json`` config.
+Set environment variable for the tutum service to re-deploy.
 
 .. code-block:: console
 
-    export REPOS_JSON_PATH=/path/to/repos.json
-
-Start the server.
-
-.. code-block:: console
-
-    python index.py 80
+    export SERVICE_ID=12b70a61-fc21-4c20-b043-2859f5489d2b
 
 Start the server behind a proxy (see:
 http://flask.pocoo.org/docs/deploying/wsgi-standalone/#proxy-setups)
@@ -77,6 +46,17 @@ Start the server to be used with a GitHub Enterprise instance.
 
    GHE_ADDRESS=192.0.2.50 python index.py 80
 
+Start the server.
+=================
+.. code-block:: console
+
+    python index.py 80
+
+Run using docker
+================
+.. code-block:: console
+
+    docker run -e SERVICE_ID=12b70a61-fc21-4c20-b043-2859f5489d2b tutum.co/sunshineo/github-webhook-handler
 
 Go to your repository's settings on `github.com <http://github.com>`_ or your
 GitHub Enterprise instance and register your public URL under

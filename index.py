@@ -10,6 +10,8 @@ import ipaddress
 import hmac
 from hashlib import sha1
 from flask import Flask, request, abort
+import tutum
+
 
 """
 Conditionally import ProxyFix from werkzeug if the USE_PROXYFIX environment
@@ -28,11 +30,7 @@ if os.environ.get('USE_PROXYFIX', None) == 'true':
 
 app = Flask(__name__)
 app.debug = os.environ.get('DEBUG') == 'true'
-
-# The repos.json file should be readable by the user running the Flask app,
-# and the absolute path should be given by this environment variable.
-REPOS_JSON_PATH = os.environ['FLASK_GITHUB_WEBHOOK_REPOS_JSON']
-
+SERVICE_ID = '12b70a61-fc21-4c20-b043-2859f5489d2b'
 
 @app.route("/", methods=['GET', 'POST'])
 def index():
@@ -51,52 +49,23 @@ def index():
                 'hooks']
 
         # Check if the POST request is from github.com or GHE
+        foundIp = False
         for block in hook_blocks:
             if ipaddress.ip_address(request_ip) in ipaddress.ip_network(block):
+                foundIp = True;
                 break  # the remote_addr is within the network range of github.
-        else:
+
+        if not foundIp:
             abort(403)
 
         if request.headers.get('X-GitHub-Event') == "ping":
-            return json.dumps({'msg': 'Hi!'})
+            return json.dumps({'msg': 'Pong!'})
         if request.headers.get('X-GitHub-Event') != "push":
-            return json.dumps({'msg': "wrong event type"})
+            return json.dumps({'msg': "Cannot handle event type: " + str(request.headers.get('X-GitHub-Event'))})
 
-        repos = json.loads(io.open(REPOS_JSON_PATH, 'r').read())
 
-        payload = json.loads(request.data)
-        repo_meta = {
-            'name': payload['repository']['name'],
-            'owner': payload['repository']['owner']['name'],
-        }
-
-        # Try to match on branch as configured in repos.json
-        match = re.match(r"refs/heads/(?P<branch>.*)", payload['ref'])
-        if match:
-            repo_meta['branch'] = match.groupdict()['branch']
-            repo = repos.get(
-                '{owner}/{name}/branch:{branch}'.format(**repo_meta), None)
-
-            # Fallback to plain owner/name lookup
-            if not repo:
-                repo = repos.get('{owner}/{name}'.format(**repo_meta), None)
-
-        if repo and repo.get('path', None):
-            # Check if POST request signature is valid
-            key = repo.get('key', None)
-            if key:
-                signature = request.headers.get('X-Hub-Signature').split(
-                    '=')[1]
-                if type(key) == unicode:
-                    key = key.encode()
-                mac = hmac.new(key, msg=request.data, digestmod=sha1)
-                if not compare_digest(mac.hexdigest(), signature):
-                    abort(403)
-
-            if repo.get('action', None):
-                for action in repo['action']:
-                    subp = subprocess.Popen(action, cwd=repo['path'])
-                    subp.wait()
+        service = tutum.Service.fetch(SERVICE_ID)
+        service.redeploy()
         return 'OK'
 
 # Check if python version is less than 2.7.7
