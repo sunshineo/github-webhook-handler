@@ -56,7 +56,7 @@ Run using docker
 ================
 .. code-block:: console
 
-    docker run -e SERVICE_MAP={"master":"b7a93ffb-4bb7-4d7c-8319-825131b03889","dev":"12b70a61-fc21-4c20-b043-2859f5489d2b"} tutum.co/sunshineo/github-webhook-handler
+    docker run -e SERVICE_MAP={"master":"b7a93ffb-4bb7-4d7c-8319-825131b03889","dev":"12b70a61-fc21-4c20-b043-2859f5489d2b"} sunshineo/github-webhook-handler
 
 Go to your repository's settings on `github.com <http://github.com>`_ or your
 GitHub Enterprise instance and register your public URL under
