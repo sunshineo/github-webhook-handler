@@ -5,7 +5,7 @@ WORKDIR /root
 EXPOSE 80
 
 ENV USE_PROXYFIX true
-ENV SERVICE_ID "Replace me"
+ENV SERVICE_MAP "Replace with a JSON map."
 
 COPY requirements.txt /root/requirements.txt
 RUN pip install -r requirements.txt

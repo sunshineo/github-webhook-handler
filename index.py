@@ -30,7 +30,7 @@ if os.environ.get('USE_PROXYFIX', None) == 'true':
 
 app = Flask(__name__)
 app.debug = os.environ.get('DEBUG') == 'true'
-SERVICE_ID = '12b70a61-fc21-4c20-b043-2859f5489d2b'
+SERVICE_MAP = json.loads(os.environ.get('SERVICE_MAP'))
 
 @app.route("/", methods=['GET', 'POST'])
 def index():
@@ -63,10 +63,16 @@ def index():
         if request.headers.get('X-GitHub-Event') != "push":
             return json.dumps({'msg': "Cannot handle event type: " + str(request.headers.get('X-GitHub-Event'))})
 
-
-        service = tutum.Service.fetch(SERVICE_ID)
-        service.redeploy()
-        return 'OK'
+        payload = json.loads(request.data)
+        match = re.match(r"refs/heads/(?P<branch>.*)", payload['ref'])
+        if match:
+            branch = match.groupdict()['branch']
+            service_id = SERVICE_MAP[branch]
+            service = tutum.Service.fetch(service_id)
+            service.redeploy()
+            return 'OK'
+        else:
+            abort(500)
 
 # Check if python version is less than 2.7.7
 if sys.version_info < (2, 7, 7):
